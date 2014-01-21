@@ -40,7 +40,6 @@ public class JsvMojo extends AbstractMojo {
 	private String basedir;
 
 	private static Pattern jsFilenamePattern = Pattern.compile("(.+?)(-([\\d\\.\\-]+))?\\.js");
-	private static Pattern jsNameVersionPattern = Pattern.compile("([\\w\\.-]+?)(-([\\d\\.\\-]+))?\\.js");
 
 	public void execute() throws MojoExecutionException {
 		String version = this.project.getVersion();
@@ -58,7 +57,7 @@ public class JsvMojo extends AbstractMojo {
 		Collection<File> filesToProcess = FileUtils.listFiles(directory, this.filesToProcessFileFilter, TrueFileFilter.INSTANCE);
 		for (File file : filesToProcess) {
 			try {
-				replaceJsNameInSourceFiles(file, version);
+				replaceJsNameInSourceFiles(replacedNames, file);
 			} catch (IOException e) {
 				throw new MojoExecutionException("Fail replacing javascript import in files", e);
 			}
@@ -77,21 +76,22 @@ public class JsvMojo extends AbstractMojo {
 		}
 	}
 
-	private void replaceJsNameInSourceFiles(File file, String version) throws IOException {
+	private void replaceJsNameInSourceFiles(final Map<String, String> replacedNames, File file) throws IOException {
 		if (!file.isFile()) {
 			return;
 		}
 		boolean lineChanged = false;
 		StringBuilder newFileContent = new StringBuilder();
 		for (String line : FileUtils.readLines(file, "UTF-8")) {
-			Matcher matcher = JsvMojo.jsNameVersionPattern.matcher(line);
-			if (line.contains("script") && matcher.find()) {
-				newFileContent.append(line.replace(matcher.group(0), matcher.group(1) + "-" + version + ".js"));
-				lineChanged = true;
-			} else {
-				newFileContent.append(line);
+			for (String nameInMap : replacedNames.keySet()) {
+				if (line.contains(nameInMap)) {
+					newFileContent.append(line.replace(nameInMap, replacedNames.get(nameInMap)));
+					lineChanged = true;
+				} else {
+					newFileContent.append(line);
+				}
+				newFileContent.append(System.getProperty("line.separator"));
 			}
-			newFileContent.append(System.getProperty("line.separator"));
 		}
 		if (!lineChanged) {
 			return;
