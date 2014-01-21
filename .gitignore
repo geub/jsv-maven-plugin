@@ -4,3 +4,6 @@ target
 target-deploy
 /.settings
 /.classpath
+/\.idea
+/.project
+*.iml
